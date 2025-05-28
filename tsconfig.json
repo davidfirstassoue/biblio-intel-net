@@ -19,5 +19,6 @@
     "esModuleInterop": true
   },
   "include": ["src", "server"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [{ "path": "./tsconfig.node.json" }],
+  "exclude": ["server"]
 }
