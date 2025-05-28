@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios'; // No longer used directly
+import { loginAdmin } from '../../lib/api'; // Added import
 import { Layout } from '../components/layout/Layout';
 import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
@@ -9,11 +10,11 @@ import { Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Utilisation de la syntaxe Vite pour les variables d'environnement
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'; // Removed
 
 export function AdminLoginPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(''); // Renamed from 'mot_de_passe' to 'password' for consistency with form
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -24,20 +25,23 @@ export function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/admin/login`, {
-        email,
-        password
-      }, {
-        withCredentials: true
-      });
+      // 'password' is the state variable holding the password from the form
+      const response = await loginAdmin(email, password); 
 
-      if (response.data.success) {
-        localStorage.setItem('adminToken', response.data.token);
+      if (response.success && response.admin) { // Check for admin object as well
+        // TODO: Implement proper session management (e.g., context, Zustand)
+        // For now, just navigate on success. No token is returned by the current backend.
+        console.log('Admin login successful:', response.admin);
         navigate('/admin/dashboard');
+      } else {
+        setError(response.message || 'Identifiants invalides ou erreur inconnue.');
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Une erreur est survenue lors de la connexion. Veuillez réessayer.';
-      setError(errorMessage);
+      // The loginAdmin function in api.ts already tries to return error.response.data
+      // So, if it's a structured error from backend, response should have .success = false
+      // This catch block is for network errors or other unexpected issues
+      console.error('Login submit error:', error);
+      setError('Une erreur est survenue lors de la connexion. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }

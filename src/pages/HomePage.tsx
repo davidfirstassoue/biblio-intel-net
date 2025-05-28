@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { Container } from '../components/ui/Container';
 import { BookGrid } from '../components/books/BookGrid';
+import { fetchBooks as apiFetchBooks } from '../../lib/api';
 import { Layout } from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios'; // Removed as apiFetchBooks handles it
 import { motion } from 'framer-motion';
 import type { Book } from '../types/book';
-import { BookCard } from '../components/BookCard';
+// import { BookCard } from '../components/BookCard'; // Not directly used here anymore for individual books
 import { Loader } from '../components/ui/Loader';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'; // Removed
 
 export function HomePage() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -19,49 +20,31 @@ export function HomePage() {
   const [popularBooks, setPopularBooks] = useState<Book[]>([]);
   const [recentBooks, setRecentBooks] = useState<Book[]>([]);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
-    const fetchBooks = async () => {
+    const loadBooks = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        const response = await axios.get(`${API_URL}/api/books`);
-        if (response.data.success) {
-          setBooks(response.data.books);
-        } else {
-          setError('Erreur lors de la récupération des livres');
-        }
-      } catch (error) {
-        console.error('Erreur:', error);
-        setError('Erreur de connexion au serveur');
+        const allBooks = await apiFetchBooks();
+        setBooks(allBooks);
+
+        // Placeholder for popular and recent books logic
+        // TODO: Implement proper sorting or filtering if date/popularity data is available
+        // For now, using slices of the main books array.
+        setPopularBooks(allBooks.slice(0, 5)); 
+        // Ensure slices don't overlap or handle cases with fewer than 10 books.
+        setRecentBooks(allBooks.slice(5, 10)); 
+
+      } catch (err) {
+        console.error('Erreur:', err);
+        setError(err instanceof Error ? err.message : 'Erreur de connexion au serveur');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBooks();
-  }, []);
-  
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        setLoading(true);
-        
-        // Charger les livres populaires
-        const popularResponse = await axios.get('http://localhost:3001/api/books/populaires');
-        console.log('Livres populaires reçus:', popularResponse.data);
-        setPopularBooks(popularResponse.data);
-        
-        // Charger les livres récents
-        const recentResponse = await axios.get('http://localhos²t:3001/api/books/recent');
-        console.log('Livres récents reçus:', recentResponse.data);
-        setRecentBooks(recentResponse.data);
-      } catch (error) {
-        console.error('Erreur lors du chargement des livres:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchBooks();
+    loadBooks();
   }, []);
   
   const categories = [

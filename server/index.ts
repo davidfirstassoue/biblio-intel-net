@@ -3,8 +3,18 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bookRoutes from './routes/bookRoutes'; // Will resolve to bookRoutes.ts
 import adminRoutes from './routes/adminRoutes'; // Will resolve to adminRoutes.ts
+import { ensureBookCollectionExists } from './lib/typesenseClient'; // Added
 
 dotenv.config();
+
+// Ensure Typesense collection exists on startup
+if (process.env.NODE_ENV !== 'test') { // Optional: avoid during tests
+  ensureBookCollectionExists().catch(err => {
+    console.error("Failed to ensure Typesense collection exists on startup:", err);
+    // Decide if you want to exit or continue if Typesense is critical
+    // process.exit(1); 
+  });
+}
 
 const app: Express = express();
 const PORT: string | number = process.env.PORT || 3001;

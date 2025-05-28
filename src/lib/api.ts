@@ -19,6 +19,11 @@ const openAlexAPI = axios.create({
   baseURL: 'https://api.openalex.org/works',
 });
 
+// Backend API
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_API_URL, // Make sure VITE_API_URL is in your .env
+});
+
 // --- Fonction principale : recherche sur toutes les APIs ---
 
 export async function searchExternalAPIs(query: string): Promise<Book[]> {
@@ -211,3 +216,51 @@ export async function getSimilarBooks(bookId: string, limit = 6): Promise<Book[]
     source: item.source,
   })) || [];
 }
+
+// --- Fonctions pour interagir avec l'API Backend ---
+
+export const fetchBooks = async (): Promise<Book[]> => { // Assuming Book type is defined
+  try {
+    const response = await apiClient.get('/api/books');
+    return response.data as Book[]; // Or perform validation/transformation
+  } catch (error) {
+    console.error('Error fetching books:', error);
+    throw error; // Re-throw or handle as needed
+  }
+};
+
+// Define AdminAuthResponse if you have a specific structure for the response
+interface AdminAuthResponse {
+  success: boolean;
+  admin?: { id: string; email: string }; // Adjust based on actual admin object
+  message?: string;
+}
+
+export const loginAdmin = async (email: string, mot_de_passe: string): Promise<AdminAuthResponse> => {
+  try {
+    const response = await apiClient.post('/api/admin/login', { email, mot_de_passe });
+    return response.data as AdminAuthResponse;
+  } catch (error) {
+    console.error('Error during admin login:', error);
+    // Axios wraps HTTP errors in error.response
+    if (axios.isAxiosError(error) && error.response) {
+      return error.response.data as AdminAuthResponse; // Return backend's error response
+    }
+    throw error; // Re-throw for other types of errors
+  }
+};
+
+// Add towards the end of src/lib/api.ts, or with other exportable functions
+export const importBookByIsbn = async (isbn: string): Promise<{ success: boolean; message: string; data?: any }> => {
+  try {
+    const response = await apiClient.post('/api/books/import', { isbn });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error importing book by ISBN:', error.message);
+    if (axios.isAxiosError(error) && error.response) {
+      return error.response.data; // Return backend's error response
+    }
+    // Fallback for non-Axios errors or errors without a response body
+    return { success: false, message: error.message || 'An unexpected error occurred during import.' };
+  }
+};
